@@ -1,0 +1,15 @@
+Package: eqtlanalysis
+Type: Package
+Title: Expression QTL analysis functions that take counts and produce eQTL analyses
+Version: 0.1.0
+Date: 2015-1-27
+Authors@R: c(person("John", "Lovell", role = c("aut", "cre", "ths"),
+                    email = "johntlovell@gmail.com"))
+Depends:
+  R(>= 3.0.2)
+Suggests:
+  knitr,
+  BiocStyle
+Description: Functions to help with eQTL analysis originally designed for Panicum hallii eQTL drought experiment
+License: Artistic-2.0
+LazyData: true
