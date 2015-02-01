@@ -2,18 +2,18 @@ stepwise.ciseqtl<-function(cross, covar,
                            phe, pos.gene, chr.gene, 
                            model.type="normal", method="hk",
                            penalties=c(3,3,3),
-                           nqtl=4 ){
+                           nqtl=4, binary.tolerance=.0001){
 
   #Part 1: set up starting model for stepwise
-  init.model<-makeqtl(cross, chr=fc.bin[i,"chr"], pos=fc.bin[i,"pos.qtl.est"], what="prob")
+  init.model<-makeqtl(cross, chr=chr.gene, pos=pos.gene, what="prob")
   #Part 2: Stepwise model selection
   mod<-stepwiseqtl(cross, pheno.col=phe, 
                    covar=covar, qtl=init.model,
                    method=method,model=model.type,scan.pairs=F,
                    additive.only=F, max.qtl=nqtl,
-                   penalties=penalties, keeplodprofile=T, verbose=F)
-  #Part 3: output if NULL QTL from stepwise
+                   penalties=penalties, keeplodprofile=T, verbose=F,tol=binary.tolerance)
   stepout<-mod
+  #Part 3: output if NULL QTL from stepwise
   if(nqtl(stepout)==0){
     output<-list(NULL,NULL)
   }else{
@@ -73,10 +73,25 @@ stepwise.ciseqtl<-function(cross, covar,
     
     #part 7 full model stats out
     fit.out<-data.frame(fit$result.drop)
-    fit.out$chr<-sapply(rownames(fit.out), function(x) strsplit(x,"@")[[1]][1])
-    fit.out$pos<-sapply(rownames(fit.out), function(x) strsplit(x,"@")[[1]][2])
+    pos.out<-sapply(rownames(fit.out), function(x) strsplit(x,"@")[[1]][2])
+    pos.out[grep(":",pos.out)]<-NA
+    fit.out$pos<-pos.out
+    chr.out<-sapply(rownames(fit.out), function(x) strsplit(x,"@")[[1]][1])
+    chr.out[grep(":",pos.out)]<-NA
+    fit.out$chr<-chr.out
     fit.out$phenotype<-phe
-    all.out<-cbind(fit.out,cis,ests.out)
+
+    #part 8 check for covariate interactions
+    covint<-addcovarint(cross, pheno.col=phe, 
+                        covar=covar, icovar=colnames(covar),
+                        qtl=mod, formula=formula(mod),
+                        method=method, model=model.type,tol=binary.tolerance)
+    covint<-data.frame(covint)[,c("LOD","X.var","Pvalue.Chi2.")]  
+    if(n.epi>0){ for (i in 1:n.epi) covint<-rbind(covint,NA)}
+    if(ncovar>0){ for(i in 1:ncovar) covint<-rbind(NA,covint)}
+    colnames(covint)<-c("covint.LOD","covint.X.var","covint.Pva")
+    
+    all.out<-cbind(fit.out,cis,ests.out,covint)
     return(list(stepout,all.out))
   }
 }
