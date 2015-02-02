@@ -1,4 +1,4 @@
-stepwise.ciseqtl<-function(cross, covar,
+stepwise.eqtl<-function(cross, covar,
                            phe, pos.gene, chr.gene, 
                            model.type="normal", method="hk",
                            penalties=c(3,3,3),
