@@ -27,7 +27,7 @@ stepwise.eqtl<-function(cross, covar,
                 qtl=stepout,
                 formula=formula(stepout),
                 get.ests=T,dropone=T,covar=covar,
-                method="hk")
+                method="hk", model=model.type)
     
     #part 5 output estimates
     ests.all<-summary(fit)$ests
