@@ -9,7 +9,7 @@ stepwise.eqtl<-function(cross, covar,
   #Part 2: Stepwise model selection
   mod<-stepwiseqtl(cross, pheno.col=phe, 
                    covar=covar, qtl=init.model,
-                   method=method,model=model.type,scan.pairs=F,
+                   method=method,model="normal",scan.pairs=F,
                    additive.only=F, max.qtl=nqtl,
                    penalties=penalties, keeplodprofile=T, verbose=F,tol=binary.tolerance)
   stepout<-mod
