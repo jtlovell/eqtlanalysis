@@ -40,10 +40,16 @@ genobyMclust<-function(gene.name, hal.file, fil.file, ids=c("id","type") ,
   if(plot){
     p1<-ggplot(geno.in, aes(x=hal, y=fil,col=as.factor(type)))+
       geom_point()+
-      theme_bw()
+      scale_y_continuous(name="FIL-allele-specific expression (log10)")+
+      scale_x_continuous(name="HAL-allele-specific expression (log10)")+
+      theme_bw()+
+      ggtitle("expression categorization by experimental unit")
     p2<-ggplot(geno.in, aes(x=hal, y=fil,col=as.factor(allele)))+
       geom_point()+
-      theme_bw()
+      scale_y_continuous(name="FIL-allele-specific expression (log10)")+
+      scale_x_continuous(name="HAL-allele-specific expression (log10)")+
+      theme_bw()+
+      ggtitle("expression categorization by  genotype")
     print(multiplot(p1, p2, cols=1))
   }
   
