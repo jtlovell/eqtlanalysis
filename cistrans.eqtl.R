@@ -41,8 +41,8 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   if(wiggle>0){
     s1.1<-as.data.frame(scanone(cross, pheno.col=phe, method="hk",  addcovar=trt))
     s1.2<-as.data.frame(scanone(cross, pheno.col=phe, method="hk",  addcovar=trt, intcovar=trt))
-    s1.wiggle<-cbind(s1.1[s1.1$chr==chromosome & s1.1$pos<pos+wiggle & s1.1$pos>pos-wiggle,],
-                     s1.2$lod[s1.1$chr==chromosome & s1.1$pos<pos+wiggle & s1.1$pos>pos-wiggle])
+    s1.wiggle<-cbind(s1.1[s1.1$chr==chromosome & s1.1$pos<position+wiggle & s1.1$pos>position-wiggle,],
+                     s1.2$lod[s1.1$chr==chromosome & s1.1$pos<position+wiggle & s1.1$pos>position-wiggle])
     wig.sum<-s1.wiggle[,3]+s1.wiggle[,4]
     position.new<-s1.wiggle$pos[which(wig.sum==max(wig.sum))[1]]
     wiggle.move<-abs(position.new-position)
