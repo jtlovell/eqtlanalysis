@@ -13,7 +13,7 @@
 #   the LOD score of the non-covariate terms in the best model
 #   the best QTL object
 #   the best fitted QTL model with statistics
-cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NULL,cov=covar){
+cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NULL,trt=covar, plot=FALSE, wiggle=1,refine.positions=F){
   
   #for a standard cis-trans eqtl, we search exhaustively through mode space
   #   the cis eQTL ("Q1") and treatment covariate ("trt") are always included. 
@@ -27,6 +27,8 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
              "y ~ Q1 + Q2 + Q1*Q2 + Q1*trt + trt",
              "y ~ Q1 + Q2 + Q1*Q2 + Q2*trt + trt",
              "y ~ Q1 + Q2 + Q1*Q2 + Q1*trt + Q2*trt + trt")
+  }else{
+    forms<-forms.in
   }
   #get name for phe, so that we index by character not number
   if(is.numeric(phe)){
@@ -34,98 +36,129 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   }
   mods<-list()
   fits<-list()
+  
+  #if our position is not 100%, allow the position to move
+  if(wiggle>0){
+    s1.1<-as.data.frame(scanone(cross, pheno.col=phe, method="hk",  addcovar=trt))
+    s1.2<-as.data.frame(scanone(cross, pheno.col=phe, method="hk",  addcovar=trt, intcovar=trt))
+    s1.wiggle<-cbind(s1.1[s1.1$chr==chromosome & s1.1$pos<pos+wiggle & s1.1$pos>pos-wiggle,],
+                     s1.2$lod[s1.1$chr==chromosome & s1.1$pos<pos+wiggle & s1.1$pos>pos-wiggle])
+    wig.sum<-s1.wiggle[,3]+s1.wiggle[,4]
+    position.new<-s1.wiggle$pos[which(wig.sum==max(wig.sum))[1]]
+    wiggle.move<-abs(position.new-position)
+    position<-position.new
+  }
   # the first two models need to be built manually because of a single QTL
   cis.eqtl<-makeqtl(cross=cross, chr=chromosome, pos=position, what="prob")
   mods[[1]]<-cis.eqtl
   mods[[2]]<-cis.eqtl
   fit.1<-fitqtl(cross, qtl=cis.eqtl, 
                 formula=forms[1], pheno.col=phe, 
-                covar=cov, method="hk", dropone=T)
+                covar=trt, method="hk", dropone=T)
   
   fit.2<-fitqtl(cross, qtl=cis.eqtl, 
                 formula=forms[2], pheno.col=phe, 
-                covar=cov, method="hk", dropone=T)
+                covar=trt, method="hk", dropone=T)
   
   lod.1<-data.frame(fit.1$result.drop)
   fits[[1]]<-lod.1
-  lod.1<-sum(lod.1[which(rownames(lod.1)!=colnames(cov)),"LOD"])
+  lod.1<-sum(lod.1[which(rownames(lod.1)!=colnames(trt)),"LOD"])
   lod.2<-data.frame(fit.2$result.drop)
   fits[[2]]<-lod.2
-  lod.2<-sum(lod.2[which(rownames(lod.2)!=colnames(cov)),"LOD"])
+  lod.2<-sum(lod.2[which(rownames(lod.2)!=colnames(trt)),"LOD"])
   lod.all<-data.frame(lod.1,lod.2)
   # fit the remaining 7 models
   for (i in 3:length(forms)){
     form.in<-forms[i]
     scan <- addqtl(cross, qtl=cis.eqtl, formula=form.in, 
-                   method="hk", covar=cov, pheno.col=phe)
+                   method="hk", covar=trt, pheno.col=phe)
     mod <- addtoqtl(cross, cis.eqtl, max(scan)$chr, max(scan)$pos)
+    if(refine.positions){
+      mod<-refineqtl(cross=cross, pheno.col=phe, qtl=mod, formula=form.in, covar=trt, model="normal",method="hk", verbose=F)
+    }
+    if(length(unique(mod$chr))==1 & abs(diff(mod$pos)) < 15){
+      scan <- addqtl(cross, qtl=cis.eqtl, formula=form.in, chr = chrnames(cross)[-which(chrnames(cross)==cis.eqtl$chr)],
+                     method="hk", covar=trt, pheno.col=phe)
+      mod <- addtoqtl(cross, cis.eqtl, max(scan)$chr, max(scan)$pos)
+      if(refine.positions){
+        mod<-refineqtl(cross=cross, pheno.col=phe, qtl=mod, formula=form.in, covar=trt, model="normal",method="hk", verbose=F)
+      }
+    }
     fit <- fitqtl(cross, qtl=mod, 
                   formula=form.in, pheno.col=phe, 
-                  covar=cov, method="hk", dropone=T, get.ests=T)
+                  covar=trt, method="hk", dropone=T, get.ests=T)
     lod.out<-data.frame(fit$result.drop)
-    lod.all<-cbind(lod.all,lod.out)
+    fits[[i]]<-lod.out
+    lodi<-sum(lod.out[which(rownames(lod.out)!=colnames(trt)),"LOD"])
+    lod.all<-cbind(lod.all,lodi)
     mods[[i]]<-mod
   }
   #deterime which mode fit is best by taking the best pLOD score from the QTL and QTL*trt interactions
   best<-which(lod.all-pens == max(lod.all-pens))
-  best.lod<-lod.all[best]
+  best.form<-forms[best]
+  best.lod<-as.numeric(lod.all[best])
   best.mod<-mods[[best]]
   best.fit<-fits[[best]]
+  #make the output object
+  all.out<-data.frame(rownames(best.fit)); colnames(all.out)[1]<-"term.id"
   
-  #extract component and return table of stats
-  pos.out<-sapply(rownames(lod.out), function(x) strsplit(x,"@")[[1]][2])
+  #add chr and pos to output
+  pos.out<-sapply(rownames(best.fit), function(x) strsplit(x,"@")[[1]][2])
   pos.out[grep(":",pos.out)]<-NA
-  lod.out$pos<-pos.out
-  
-  chr.out<-sapply(rownames(lod.out), function(x) strsplit(x,"@")[[1]][1])
+  all.out$pos<-pos.out
+  chr.out<-sapply(rownames(best.fit), function(x) strsplit(x,"@")[[1]][1])
   chr.out[is.na(pos.out)]<-NA
-  lod.out$chr<-chr.out
+  all.out$chr<-chr.out
   
-  cat1<-rownames(lod.out)
-  category<-rownames(lod.out)
-  category[intersect(grep("trt", cat1), grep(":", cat1))]<-"trt.int"
+  #add category information
+  cat1<-rownames(best.fit)
+  category<-rownames(best.fit)
   category[intersect(grep("trt", cat1), grep(":", cat1,invert=TRUE))]<-"trt"
   category[intersect(grep("trt", cat1, invert=TRUE), grep(":", cat1))]<-"epi"
-  cis.index<-which(as.numeric(cis.eqtl$pos)==pos & as.numeric(cis.eqtl$chr)==chr)
-  trans.index<-which(as.numeric(pos.out)==max(scan)$pos & as.numeric(chr.out)==max(scan)$chr)
-  category[cis.index]<-"cis"
-  category[trans.index]<-"trans"
   
-  lod.out$category<-category
+  cis.id<-category[which(abs(as.numeric(pos.out)<5)-cis.eqtl$pos & as.numeric(chr.out)==cis.eqtl$chr)]
+  category[category==cis.id]<-"cis"
+  cis.trt.int<-category[intersect(grep("trt", cat1), grep(cis.id, cat1))]
+  category[category==cis.trt.int]<-"cis.trt.int"
   
-  lod.out$phenotype<-phe
+  trans.id<-category[intersect(grep("@", category), grep(":", category,invert=TRUE))]
+  category[category==trans.id]<-"trans"
+  trans.trt.int<-category[intersect(grep("@", category), grep(":", category))]
+  category[category==trans.trt.int]<-"trans.trt.int"
+  all.out$category<-category
   
+  #add phenotype name
+  all.out$phenotype<-phe
+  
+  #add estimates
   ests.all<-summary(fit)$ests
   rows.dom<-intersect(grep("d",rownames(ests.all)), grep(":",rownames(ests.all),invert=TRUE))
   rows.add<-intersect(intersect(grep("a",rownames(ests.all)), grep(":",rownames(ests.all),invert=TRUE)), 
                       grep(colnames(covar),rownames(ests.all),invert=TRUE))
-  rows.cov<-which(rownames(ests.all) %in% colnames (covar))
-  if(nqtls==1){
-    covar.ests_out<-data.frame(t(c(ests.all[rows.cov,],NA,NA,NA)))
-    colnames(covar.ests_out)<-c("est.add","SE.add","t.add","est.dom","SE.dom","t.dom")
-    dom.ests_out<-data.frame(t(ests.all[rows.dom,1:3])); colnames(dom.ests_out)<-c("est.dom","SE.dom","t.dom")
-    add.ests_out<-data.frame(t(ests.all[rows.add,1:3])); colnames(add.ests_out)<-c("est.add","SE.add","t.add")
-    qtl.ests_out<-cbind(add.ests_out,dom.ests_out)
-    ests.out<-rbind(covar.ests_out,qtl.ests_out)
-  }else{
-    covar.ests_out<-data.frame(t(c(ests.all[rows.cov,],NA,NA,NA)))
-    colnames(covar.ests_out)<-c("est.add","SE.add","t.add","est.dom","SE.dom","t.dom")
-    rownames(covar.ests_out)<-colnames(covar)
-    dom.ests_out<-data.frame(ests.all[rows.dom,1:3]); colnames(dom.ests_out)<-c("est.dom","SE.dom","t.dom")
-    add.ests_out<-data.frame(ests.all[rows.add,1:3]); colnames(add.ests_out)<-c("est.add","SE.add","t.add")
-    qtl.ests_out<-cbind(add.ests_out,dom.ests_out)
-    ests.out<-rbind(covar.ests_out,qtl.ests_out)
-  }
-  #add nas if epistasis
-  if(n.epi>0){
-    for (i in 1:n.epi) ests.out<-rbind(ests.out,NA)     
-  }
+  rows.cov<-which(rownames(ests.all) == "trt")
+  covar.ests_out<-data.frame(t(c(ests.all[rows.cov,],NA,NA,NA)))
+  colnames(covar.ests_out)<-c("est.add","SE.add","t.add","est.dom","SE.dom","t.dom")
+  rownames(covar.ests_out)<-"trt"
+  dom.ests_out<-data.frame(ests.all[rows.dom,1:3]); colnames(dom.ests_out)<-c("est.dom","SE.dom","t.dom")
+  add.ests_out<-data.frame(ests.all[rows.add,1:3]); colnames(add.ests_out)<-c("est.add","SE.add","t.add")
+  qtl.ests_out<-cbind(add.ests_out,dom.ests_out)
+  ests.out<-rbind(covar.ests_out,qtl.ests_out)
+  ests.out$term.id<-gsub("a","",rownames(ests.out))
   
-  fits[[i]]<-lod.out
-  lod.out<-sum(lod.out[which(rownames(lod.out)!=colnames(cov)),"LOD"])
-  lod.out<-data.frame(lod.out)
-  colnames(lod.out)<-paste("lod",i, sep=".")
-  rownames(lod.out)<-phe
+  all.out<-merge(all.out, ests.out, by="term.id", all.x=T)
   
-  return(list(best,lod.out,best.mod,best.fit))
+  lod.df<-data.frame(best.fit)
+  lod.df$term.id<-rownames(lod.df)
+  all.out<-merge(all.out, lod.df, by="term.id", all.x=T)
+  if(plot){
+    if(refine.positions){
+      plotLodProfile(best.mod, main=paste(phe, " ... cis position --", chromosome,"@",position))
+    }else{
+      ref<-refineqtl(cross=cross, pheno.col=phe, qtl=best.mod, formula=best.form, covar=trt,model="normal",method="hk", verbose=F)
+      plotLodProfile(ref, main=paste(phe, " ... cis position --", chromosome,"@",position))
+    }  
+  }
+  refine.move<-abs(cis.eqtl$pos-as.numeric(all.out[all.out$category=="cis","pos"]))
+  move<-data.frame(wiggle.move, refine.move)
+  return(list(formula=best.form,qtl.lod=best.lod,model=best.mod,stats=all.out,cis.position.move=move))
 }
