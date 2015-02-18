@@ -1,6 +1,6 @@
 #Author JT Lovell
 #Date 9-Feb 2014
-#Version 1.2
+#Version 2.2
 
 #This function fits an exhaustive set of cis/trans QTL models
 #Here, the cis QTL term is not penalized, but all other terms are
@@ -74,7 +74,8 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
                    method="hk", covar=trt, pheno.col=phe)
     mod <- addtoqtl(cross, cis.eqtl, max(scan)$chr, max(scan)$pos)
     if(length(unique(mod$chr))==1 & abs(diff(mod$pos)) < 15){
-      scan <- addqtl(cross, qtl=cis.eqtl, formula=form.in, chr = chrnames(cross)[-which(chrnames(cross)==cis.eqtl$chr)],
+      scan <- addqtl(cross, qtl=cis.eqtl, formula=form.in, 
+                     chr = chrnames(cross)[-which(chrnames(cross)==cis.eqtl$chr)],
                      method="hk", covar=trt, pheno.col=phe)
       mod <- addtoqtl(cross, cis.eqtl, max(scan)$chr, max(scan)$pos)
     }
@@ -109,8 +110,7 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   category[intersect(grep("trt", cat1), grep(":", cat1,invert=TRUE))]<-"trt"
   category[intersect(grep("trt", cat1, invert=TRUE), grep(":", cat1))]<-"epi"
   
-  cis.id<-category[which(abs(as.numeric(pos.out)<5)-cis.eqtl$pos & as.numeric(chr.out)==cis.eqtl$chr)]
-  category[category==cis.id]<-"cis"
+  category[category==cis.eqtl$name]<-"cis"
   cis.trt.int<-category[intersect(grep("trt", cat1), grep(cis.id, cat1))]
   category[category==cis.trt.int]<-"cis.trt.int"
   
@@ -143,7 +143,7 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   lod.df<-data.frame(best.fit)
   lod.df$term.id<-rownames(lod.df)
   all.out<-merge(all.out, lod.df, by="term.id", all.x=T)
-
+  
   move<-wiggle.move
   return(list(formula=best.form,qtl.lod=best.lod,model=best.mod,stats=all.out,cis.position.move=move))
 }
