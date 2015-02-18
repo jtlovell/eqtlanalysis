@@ -73,7 +73,7 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
     scan <- addqtl(cross, qtl=cis.eqtl, formula=form.in, 
                    method="hk", covar=trt, pheno.col=phe)
     mod <- addtoqtl(cross, cis.eqtl, max(scan)$chr, max(scan)$pos)
-    if(length(unique(mod$chr))==1 & abs(diff(mod$pos)) < 15){
+    if(length(unique(mod$chr))==1 & abs(diff(mod$pos)) < 35){
       scan <- addqtl(cross, qtl=cis.eqtl, formula=form.in, 
                      chr = chrnames(cross)[-which(chrnames(cross)==cis.eqtl$chr)],
                      method="hk", covar=trt, pheno.col=phe)
