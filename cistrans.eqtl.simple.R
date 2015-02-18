@@ -13,7 +13,7 @@
 #   the LOD score of the non-covariate terms in the best model
 #   the best QTL object
 #   the best fitted QTL model with statistics
-cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NULL,trt=covar, plot=FALSE, wiggle=1,refine.positions=F){
+cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NULL,trt=covar, wiggle=1){
   
   #for a standard cis-trans eqtl, we search exhaustively through mode space
   #   the cis eQTL ("Q1") and treatment covariate ("trt") are always included. 
@@ -73,16 +73,10 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
     scan <- addqtl(cross, qtl=cis.eqtl, formula=form.in, 
                    method="hk", covar=trt, pheno.col=phe)
     mod <- addtoqtl(cross, cis.eqtl, max(scan)$chr, max(scan)$pos)
-    if(refine.positions){
-      mod<-refineqtl(cross=cross, pheno.col=phe, qtl=mod, formula=form.in, covar=trt, model="normal",method="hk", verbose=F)
-    }
     if(length(unique(mod$chr))==1 & abs(diff(mod$pos)) < 15){
       scan <- addqtl(cross, qtl=cis.eqtl, formula=form.in, chr = chrnames(cross)[-which(chrnames(cross)==cis.eqtl$chr)],
                      method="hk", covar=trt, pheno.col=phe)
       mod <- addtoqtl(cross, cis.eqtl, max(scan)$chr, max(scan)$pos)
-      if(refine.positions){
-        mod<-refineqtl(cross=cross, pheno.col=phe, qtl=mod, formula=form.in, covar=trt, model="normal",method="hk", verbose=F)
-      }
     }
     fit <- fitqtl(cross, qtl=mod, 
                   formula=form.in, pheno.col=phe, 
@@ -149,15 +143,7 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   lod.df<-data.frame(best.fit)
   lod.df$term.id<-rownames(lod.df)
   all.out<-merge(all.out, lod.df, by="term.id", all.x=T)
-  if(plot){
-    if(refine.positions){
-      plotLodProfile(best.mod, main=paste(phe, " ... cis position --", chromosome,"@",position))
-    }else{
-      ref<-refineqtl(cross=cross, pheno.col=phe, qtl=best.mod, formula=best.form, covar=trt,model="normal",method="hk", verbose=F)
-      plotLodProfile(ref, main=paste(phe, " ... cis position --", chromosome,"@",position))
-    }  
-  }
-  refine.move<-abs(cis.eqtl$pos-as.numeric(all.out[all.out$category=="cis","pos"]))
-  move<-data.frame(wiggle.move, refine.move)
+
+  move<-wiggle.move
   return(list(formula=best.form,qtl.lod=best.lod,model=best.mod,stats=all.out,cis.position.move=move))
 }
