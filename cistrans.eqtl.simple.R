@@ -62,11 +62,13 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   
   lod.1<-data.frame(fit.1$result.drop)
   fits[[1]]<-lod.1
-  lod.1<-sum(lod.1[which(rownames(lod.1)!=colnames(trt)),"LOD"])
+  lod.nullmod<-lod.1[cis.eqtl$name,"LOD"]
+  lod.1<-sum(lod.1[which(rownames(lod.1)!=colnames(trt)),"LOD"])-lod.nullmod
   lod.2<-data.frame(fit.2$result.drop)
   fits[[2]]<-lod.2
-  lod.2<-sum(lod.2[which(rownames(lod.2)!=colnames(trt)),"LOD"])
+  lod.2<-sum(lod.2[which(rownames(lod.2)!=colnames(trt)),"LOD"])-lod.nullmod
   lod.all<-data.frame(lod.1,lod.2)
+  cis.eqtl$name
   # fit the remaining 7 models
   for (i in 3:length(forms)){
     form.in<-forms[i]
@@ -84,12 +86,13 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
                   covar=trt, method="hk", dropone=T, get.ests=T)
     lod.out<-data.frame(fit$result.drop)
     fits[[i]]<-lod.out
-    lodi<-sum(lod.out[which(rownames(lod.out)!=colnames(trt)),"LOD"])
+    lodi<-sum(lod.out[which(rownames(lod.out)!=colnames(trt)),"LOD"])-lod.nullmod
     lod.all<-cbind(lod.all,lodi)
     mods[[i]]<-mod
   }
   #deterime which mode fit is best by taking the best pLOD score from the QTL and QTL*trt interactions
-  best<-which(lod.all-pens == max(lod.all-pens))
+  plods<-lod.all-pens
+  best<-which(plods == max(plods))
   best.form<-forms[best]
   best.lod<-as.numeric(lod.all[best])
   best.mod<-mods[[best]]
@@ -111,7 +114,7 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   category[intersect(grep("trt", cat1, invert=TRUE), grep(":", cat1))]<-"epi"
   
   category[category==cis.eqtl$name]<-"cis"
-  cis.trt.int<-category[intersect(grep("trt", cat1), grep(cis.id, cat1))]
+  cis.trt.int<-category[intersect(grep("trt", cat1), grep(cis.eqtl$name, cat1))]
   category[category==cis.trt.int]<-"cis.trt.int"
   
   trans.id<-category[intersect(grep("@", category), grep(":", category,invert=TRUE))]
@@ -145,5 +148,5 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   all.out<-merge(all.out, lod.df, by="term.id", all.x=T)
   
   move<-wiggle.move
-  return(list(formula=best.form,qtl.lod=best.lod,model=best.mod,stats=all.out,cis.position.move=move))
+  return(list(formula=best.form,plods=plods,ciseqtl.lod=lod.nullmod,model=best.mod,stats=all.out,cis.position.move=move))
 }
