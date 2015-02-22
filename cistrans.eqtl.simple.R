@@ -36,11 +36,13 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   }
   mods<-list()
   fits<-list()
-  
+  scans<-list()
   #if our position is not 100%, allow the position to move
   if(wiggle>0){
     s1.1<-as.data.frame(scanone(cross, pheno.col=phe, method="hk",  addcovar=trt))
+    scans[[1]]<-s1.1
     s1.2<-as.data.frame(scanone(cross, pheno.col=phe, method="hk",  addcovar=trt, intcovar=trt))
+    scans[[2]]<-s1.2
     s1.wiggle<-cbind(s1.1[s1.1$chr==chromosome & s1.1$pos<position+wiggle & s1.1$pos>position-wiggle,],
                      s1.2$lod[s1.1$chr==chromosome & s1.1$pos<position+wiggle & s1.1$pos>position-wiggle])
     wig.sum<-s1.wiggle[,3]+s1.wiggle[,4]
@@ -74,11 +76,13 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
     form.in<-forms[i]
     scan <- addqtl(cross, qtl=cis.eqtl, formula=form.in, 
                    method="hk", covar=trt, pheno.col=phe)
+    scans[[i]]<-scan
     mod <- addtoqtl(cross, cis.eqtl, max(scan)$chr, max(scan)$pos)
     if(length(unique(mod$chr))==1 & abs(diff(mod$pos)) < 35){
       scan <- addqtl(cross, qtl=cis.eqtl, formula=form.in, 
                      chr = chrnames(cross)[-which(chrnames(cross)==cis.eqtl$chr)],
                      method="hk", covar=trt, pheno.col=phe)
+      scans[[i]]<-scan
       mod <- addtoqtl(cross, cis.eqtl, max(scan)$chr, max(scan)$pos)
     }
     fit <- fitqtl(cross, qtl=mod, 
@@ -148,5 +152,5 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   all.out<-merge(all.out, lod.df, by="term.id", all.x=T)
   
   move<-wiggle.move
-  return(list(formula=best.form,plods=plods,ciseqtl.lod=lod.nullmod,model=best.mod,stats=all.out,cis.position.move=move))
+  return(list(formula=best.form,plods=plods,ciseqtl.lod=lod.nullmod,scans=scans,model=best.mod,stats=all.out,cis.position.move=move))
 }
