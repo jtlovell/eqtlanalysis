@@ -1,7 +1,5 @@
-calc.polygenic<-function(cross, best.mod, phe, trt, best.form){
+calc.polygenic<-function(cross, chrs, poss, phe, trt, best.form){
   g<-pull.genoprob(cross, include.pos.info=T, rotate=T, omit.first.prob=F)
-  chrs<-best.mod$chr
-  poss<-best.mod$pos
   mars<-find.marker(cross,chrs, poss)
   to.vc<-data.frame(cbind(pull.pheno(cross,pheno.col=phe),trt))
   colnames(to.vc)[1]<-c("y")
