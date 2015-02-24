@@ -112,6 +112,7 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
                      formula=best.form, pheno.col=phe, 
                      covar=trt, method="hk", dropone=T, get.ests=T)
     best.fit<-data.frame(fitref$result.drop)
+    cis.eqtl<-best.mod$name[1]
   }
   
   #make the output object

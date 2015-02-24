@@ -69,6 +69,7 @@ eqtl.fit3<-function(cross, ct.obj, trt, pens=NULL, q3forms=NULL, refine.qtl=FALS
                      formula=best.form, pheno.col=phe, 
                      covar=trt, method="hk", dropone=T, get.ests=T)
       best.fit<-data.frame(fitref$result.drop)
+      cis.eqtl<-best.mod$name[1]
     }
     #make the output object
     all.out<-data.frame(rownames(best.fit)); colnames(all.out)[1]<-"term.id"
