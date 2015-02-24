@@ -12,6 +12,7 @@ calc.polygenic<-function(cross, chrs, poss, phe, trt, best.form){
   colnames(to.vc)[3:length(colnames(to.vc))]<-paste("Q",seq(from=1, to=length(colnames(to.vc))-2), sep="")
   snps<-as.data.frame(pull.geno(cross))
   to.vc$SNP<-snps
+  to.vc<<-to.vc
   v1<-varComp(as.formula(best.form) , to.vc, ~ibs(SNP))
   pg<-as.numeric(v1$varComps)
   err<-as.numeric(v1$sigma2)
