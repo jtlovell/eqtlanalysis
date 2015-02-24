@@ -235,8 +235,8 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
     snps<-as.data.frame(pull.geno(cross))
     print(head(to.vc))
     to.vc$SNP<-snps
-
-    v1<-varComp(as.formula(best.form) , to.vc,  random= ~ibs(SNP))
+    vcin<<-to.vc
+    v1<-varComp(as.formula(best.form) , vcin,  random= ~ibs(SNP))
     pg<-as.numeric(v1$varComps)
     err<-as.numeric(v1$sigma2)
     prop.pg<-pg/(pg+err)
