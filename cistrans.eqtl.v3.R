@@ -13,7 +13,7 @@
 #   the LOD score of the non-covariate terms in the best model
 #   the best QTL object
 #   the best fitted QTL model with statistics
-cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NULL,trt=covar, wiggle=1, calc.polygenic=FALSE, fit3=FALSE){
+cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NULL,trt=covar, wiggle=1, refine.qtl=FALSE){
   #for a standard cis-trans eqtl, we search exhaustively through mode space
   #   the cis eQTL ("Q1") and treatment covariate ("trt") are always included. 
   if(is.null(forms.in)){
@@ -103,8 +103,19 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   best.mod<-mods[[best]]
   best.fit<-fits[[best]]
   best.scan<-scans[[best]]
+
+  #refine if desired
+  if(refine.qtl){
+    best.mod<-refineqtl(cross, pheno.col=phe, qtl=best.mod, covar=trt, method="hk", model="normal",
+                        formula=best.form, keeplodprofile=F, verbose=F)
+    fitref <- fitqtl(cross, qtl=best.mod, 
+                     formula=best.form, pheno.col=phe, 
+                     covar=trt, method="hk", dropone=T, get.ests=T)
+    best.fit<-data.frame(fitref$result.drop)
+  }
   
   #make the output object
+  
   all.out<-data.frame(rownames(best.fit)); colnames(all.out)[1]<-"term.id"
   mgsub <- function(pattern, replacement, x, ...) {
     if (length(pattern)!=length(replacement)) {
