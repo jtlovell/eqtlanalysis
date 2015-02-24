@@ -61,7 +61,7 @@ eqtl.fit3<-function(cross, ct.obj, trt, pens=NULL, q3forms=NULL, refine.qtl=FALS
     best.lod<-as.numeric(lod.all[best])
     best.mod<-mods[[best]]
     best.fit<-fits[[best]]
-    
+    cis.name<-cis.eqtl
     if(refine.qtl){
       best.mod<-refineqtl(cross, pheno.col=phe, qtl=best.mod, covar=trt, method="hk", model="normal",
                       formula=best.form, keeplodprofile=F, verbose=F)
@@ -69,7 +69,7 @@ eqtl.fit3<-function(cross, ct.obj, trt, pens=NULL, q3forms=NULL, refine.qtl=FALS
                      formula=best.form, pheno.col=phe, 
                      covar=trt, method="hk", dropone=T, get.ests=T)
       best.fit<-data.frame(fitref$result.drop)
-      cis.eqtl<-best.mod$name[1]
+      cis.name<-best.mod$name[1]
     }
     #make the output object
     all.out<-data.frame(rownames(best.fit)); colnames(all.out)[1]<-"term.id"
@@ -83,7 +83,7 @@ eqtl.fit3<-function(cross, ct.obj, trt, pens=NULL, q3forms=NULL, refine.qtl=FALS
       }
       result
     }
-    cis.name<-cis.eqtl
+    
     cis.ints<-c(paste(":",cis.name, sep=""),paste(cis.name,":", sep=""))
     qnames<-rownames(best.fit)
     qnames<-mgsub(c(":trt","trt:",cis.ints),rep("",4),qnames)

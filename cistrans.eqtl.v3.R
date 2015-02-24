@@ -103,7 +103,7 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   best.mod<-mods[[best]]
   best.fit<-fits[[best]]
   best.scan<-scans[[best]]
-
+  cis.name<-cis.eqtl$name
   #refine if desired
   if(refine.qtl){
     best.mod<-refineqtl(cross, pheno.col=phe, qtl=best.mod, covar=trt, method="hk", model="normal",
@@ -112,7 +112,7 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
                      formula=best.form, pheno.col=phe, 
                      covar=trt, method="hk", dropone=T, get.ests=T)
     best.fit<-data.frame(fitref$result.drop)
-    cis.eqtl<-best.mod$name[1]
+    cis.name<-best.mod$name[1]
   }
   
   #make the output object
@@ -128,7 +128,7 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
     }
     result
   }
-  cis.name<-cis.eqtl$name
+  
   cis.ints<-c(paste(":",cis.name, sep=""),paste(cis.name,":", sep=""))
   qnames<-rownames(best.fit)
   qnames<-mgsub(c(":trt","trt:",cis.ints),rep("",4),qnames)
