@@ -24,6 +24,7 @@ cross<-read.cross("csvs",dir="", genotypes=c("filfil","filhal","halhal"),
                   alleles=c("fil","hal"),
                   na.strings="-")
 
+
 #read in counts data
 ge<-read.delim("Phallii_eQTL_Normalized.counts") #normalized counts from Jerry
 
@@ -88,12 +89,14 @@ save(cross, cross.norm, cross.bin,covar,cis.trt,cis.trt.pen,trt,epi.pen, file="p
 #######################################
 # Part 4: Run permutation (do on cluster)
 #######################################
+load("ph2015_inputfor10kperms.RData")
 #for normal traits
 # #need four sets of s1 penalties
-# perm.phe<-data.frame(sample(c(0,1,2),nind(cross.norm), replace=T))
-# colnames(perm.phe)<-"perm.phe"
-# cross.perm<-add.phenos(cross,perm.phe)
-# pens<-fourperms(cross=cross.perm,phename="perm.phe", np=10000, alpha=.05, nc=20)
+perm.phe<-data.frame(sample(c(0,1,2),nind(cross.norm), replace=T))
+colnames(perm.phe)<-"perm.phe"
+cross.perm<-add.phenos(cross,perm.phe)
+cross.perm<-calc.genoprob(cross.perm, step=1,error.prob=0.001, map.function="kosambi")
+pens<-fourperms(cross=cross.perm,phename="perm.phe", np=10, alpha=.05, nc=1, fit3=T, covar=covar)
 # 
 # #for binary, need to produce a scanone curve for each penalty
 cross.norm<-calc.genoprob(cross.norm, step=1,error.prob=0.001, map.function="kosambi")
@@ -114,8 +117,13 @@ for ( i in series){
 # load("phe2015_binaryperm10ksim.RData")
 # ggplot(binperms.out, aes(x=prop.0, y=penalty, col=penalty.type))+
 #   geom_point()+geom_line()+theme_bw()+facet_grid(penalty.type~.)
-
+load("phe2015_allperm10k.RData")
 #make a vector of 9 penalties for normal
+pens<-vector()
+pens[1]<-3.967144
+pens[2]<-6.144188-cis.trt.pen
+pens[3]<-6.922426-epi.pen
+pens[4]<-9.576449-(epi.pen+cis.trt.pen)
 pens.all<-c(0,  # plod = 0
         cis.trt.pen, #plod = lod (Q1 *trt)- chi2.2
         pens[1], #plod = lod (Q2) - pen1
@@ -125,6 +133,16 @@ pens.all<-c(0,  # plod = 0
         pens[3] + epi.pen + cis.trt.pen, #plod= lod(Q2) +lod(Q2*trt) - (pen4 + chi2.4 + chi2.2) 
         pens[4] + epi.pen + cis.trt.pen, #plod= lod(Q2) +lod(Q2*trt) - (pen4 + chi2.4 + chi2.2) 
         pens[4] + epi.pen + cis.trt.pen + cis.trt.pen) #plod= lod(Q2) +lod(Q2*trt) - (pen4 + chi2.4 + chi2.2 + chi2.2) 
+
+pen1<-c(0.000000,  1.301030,  3.967144,  5.268174,  6.144188,  6.922426,  8.223456,  9.576449, 10.877479)
+cross.norm<-calc.genoprob(cross.norm, step=1,error.prob=0.001, map.function="kosambi")
+test<-cistrans.eqtl(cross=cross.norm, phe=as.character(genpos$gene[i]),
+              chromosome=genpos$lg[i],
+              position=genpos$pos[i], 
+              pens=pens.all, trt=trt, wiggle=3)
+
+
+pens.all3<-c(pens.all, pens3)
 
 #for binary - generate a model for each penalty. 
 binpen1<-
@@ -277,3 +295,18 @@ wiggle.list<-lapply(first500, function(x) x[[6]])
 stats.df<-ldply(stats.list,data.frame)
 plods.df<-ldply(plods.list,data.frame)
 ciseqtl<-unlist(ciseqtl.lod.list)
+load("ph2015_inputfor10kperms.RData")
+cross.null<-read.cross("csvs",dir="", genotypes=c("filfil","filhal","halhal"),
+                  genfile="ph2015_finalF2map_gen.csv", 
+                  phefile= "ph2015_finalF2map_pheNULL.csv",
+                  alleles=c("fil","hal"),
+                  na.strings=c("NA","-"))
+save(cross.null, file="ph2015_cross.null.RData")
+test<-add.phenos(cross.null, pull.pheno(cross.norm)[,5:25])
+hotperm1 <- hotperm(cross = test,
+                    n.quant = 300,
+                    n.perm = 100,
+                    lod.thrs = 3.95,
+                    alpha.levels = c(0.0001,0.001,0.01,0.05,0.1),
+                    drop.lod = 1.5,
+                    verbose = T)

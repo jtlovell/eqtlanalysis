@@ -13,7 +13,7 @@
 #   the LOD score of the non-covariate terms in the best model
 #   the best QTL object
 #   the best fitted QTL model with statistics
-cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NULL,trt=covar, wiggle=1, fit3=FALSE){
+cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NULL,trt=covar, wiggle=1, calc.polygenic=FALSE, fit3=FALSE){
   #for a standard cis-trans eqtl, we search exhaustively through mode space
   #   the cis eQTL ("Q1") and treatment covariate ("trt") are always included. 
   if(is.null(forms.in)){
@@ -104,6 +104,9 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   best.fit<-fits[[best]]
   best.scan<-scans[[best]]
   
+#   if(refine.mod2){
+#     r<-refineqtl(cross,)
+#   }
   ### 
   # if we want to fit a 3rd QTL look here - 
   if(fit3){
@@ -117,15 +120,19 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
       if(length(unique(mod3$chr))<3){
         chr.dup<-mod3$chr[(duplicated(mod3$chr))]
         diff.pos<-abs(diff(mod3$pos[mod3$chr==chr.dup]))
-        if(diff.pos < 35){
-          scan3 <- addqtl(cross, qtl=best.mod, formula=form.in3,
+      }else{
+        mod3a<-mod3
+      }
+      if(diff.pos < 50){
+          scan3.2 <- addqtl(cross, qtl=best.mod, formula=form.in3,
                           chr = chrnames(cross)[-which(chrnames(cross)==chr.dup)],
                           method="hk", covar=trt, pheno.col=phe)
-          scans[[i+9]]<-scan
-          mod3 <- addtoqtl(cross, best.mod, max(scan3)$chr, max(scan3)$pos)
+          scans[[i+9]]<-scan3.2
+          mod3a <- addtoqtl(cross, best.mod, max(scan3.2)$chr, max(scan3.2)$pos)
+        }else{
+          mod3a<-mod3
         }
-      }
-      fit3 <- fitqtl(cross, qtl=mod3, 
+      fit3 <- fitqtl(cross, qtl=mod3a, 
                     formula=form.in3, pheno.col=phe, 
                     covar=trt, method="hk", dropone=T, get.ests=T)
       lod.out3<-data.frame(fit3$result.drop)
@@ -134,10 +141,10 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
       lod.all<-cbind(lod.all,lodi)
       mods[[i+9]]<-mod3
     }
-    pens3<-c((pens.all[best] + pens[3]),  
-             (pens.all[best] + pens[4]),
-             (pens.all[best] + pens[6]),
-             (pens.all[best] + pens[7]))
+    pens3<-c((pens[best] + pens[3]),  
+             (pens[best] + pens[4]),
+             (pens[best] + pens[6]),
+             (pens[best] + pens[7]))
     plods3<-lod.all[10:13]-pens3
     if(max(plods3)>max(plods)){
       best3<-which(plods3 == max(plods3))
@@ -180,7 +187,7 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   category[grep(":", category)]<-"epi"
   category[grep(paste(trans.name,collapse="|"), category)]<-"trans"
   category[category==cis.name]<-"cis"
-
+  all.out$category<-category
   #add phenotype name
   all.out$phenotype<-phe
   
@@ -209,10 +216,41 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   all.out<-merge(all.out, lod.df, by="term.id", all.x=T)
   
   move<-wiggle.move
-  return(list(formula=best.form,
-              plods=plods,
-              ciseqtl.lod=lod.nullmod,
-              scans=best.scan,
-              stats=all.out,
-              cis.position.move=move))
+  
+  if(calc.polygenic){
+    g<-pull.genoprob(cross, include.pos.info=T, rotate=T, omit.first.prob=F)
+    chrs<-best.mod$chr
+    poss<-best.mod$pos
+    mars<-find.marker(cross,chrs, poss)
+    to.vc<-data.frame(cbind(pull.pheno(cross,pheno.col=phe),trt))
+    colnames(to.vc)[1]<-c("y")
+    for(i in mars){
+      gs<-g[g$marker ==i,]
+      gs.out<-as.data.frame(as.numeric(unlist(apply(gs[,-c(1:4)],2,function(x) which(x==max(x))[1]))))
+      colnames(gs.out)<-i
+      to.vc<-cbind(to.vc,gs.out)
+    }
+    colnames(to.vc)[3:length(colnames(to.vc))]<-paste("Q",seq(from=1, to=length(colnames(to.vc))-2), sep="")
+    snps<-as.data.frame(pull.geno(cross))
+    to.vc$SNP<-snps
+
+    v1<-varComp(as.formula(best.form) , to.vc,  random= ~ibs(SNP))
+    pg<-as.numeric(v1$varComps)
+    err<-as.numeric(v1$sigma2)
+    prop.pg<-pg/(pg+err)
+    return(list(formula=best.form,
+                plods=plods,
+                ciseqtl.lod=lod.nullmod,
+                scans=best.scan,
+                stats=all.out,
+                cis.position.move=move,
+                polygenic=c(pg,err,prop.pg)))
+  }else{
+    return(list(formula=best.form,
+                plods=plods,
+                ciseqtl.lod=lod.nullmod,
+                scans=best.scan,
+                stats=all.out,
+                cis.position.move=move))
+  }
 }
