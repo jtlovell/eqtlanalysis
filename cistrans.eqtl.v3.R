@@ -103,7 +103,6 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   best.mod<-mods[[best]]
   best.fit<-fits[[best]]
   best.scan<-scans[[best]]
-  print(cis.eqtl)
   cis.name<-cis.eqtl$name
   #refine if desired
   if(refine.qtl){
