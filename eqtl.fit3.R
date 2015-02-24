@@ -1,8 +1,6 @@
 eqtl.fit3<-function(cross, ct.obj, trt, pens=NULL, q3forms=NULL, refine.qtl=FALSE){
   if(is.null(pens)){pens<-pens.all<-c(0.000000,  1.301030,  3.967144,  5.268174,  6.144188,  6.922426,  8.223456,  9.576449, 10.877479)}
-  if(is.null(q3forms)){
-    q3forms<-c("+ Q3", "+ Q3 + Q3*trt", "+ Q3 + Q1*Q3", "+ Q3 + Q3*trt + Q3*Q1")
-  }
+  if(is.null(q3forms)){q3forms<-c("+ Q3", "+ Q3 + Q3*trt", "+ Q3 + Q1*Q3", "+ Q3 + Q3*trt + Q3*Q1") }
   
   chr<-ct.obj$chr
   pos<-ct.obj$pos
@@ -12,7 +10,7 @@ eqtl.fit3<-function(cross, ct.obj, trt, pens=NULL, q3forms=NULL, refine.qtl=FALS
   phe<-ct.obj$stats$phenotype[1]
   lod.nullmod<-ct.obj$ciseqtl.lod
   cis.eqtl<-as.character(ct.obj$stats[ct.obj$stats$category=="cis","term.id"])
-
+  
   best.mod<-makeqtl(cross, chr=chr, pos=pos, what="prob")
   lod.all<-vector()
   mods<-list()
@@ -24,14 +22,17 @@ eqtl.fit3<-function(cross, ct.obj, trt, pens=NULL, q3forms=NULL, refine.qtl=FALS
     scan3 <- addqtl(cross, qtl=best.mod, formula=form.in3, 
                     method="hk", covar=trt, pheno.col=phe)
     mod3 <- addtoqtl(cross, best.mod, max(scan3)$chr, max(scan3)$pos)
+    print(mod3)
     if(length(unique(mod3$chr))<3){
       chr.dup<-mod3$chr[(duplicated(mod3$chr))]
       diff.pos<-abs(diff(mod3$pos[mod3$chr==chr.dup]))
       if(diff.pos < 50 & !is.na(diff.pos)){
         scan3 <- addqtl(cross, qtl=best.mod, formula=form.in3,
-                          chr = chrnames(cross)[-which(chrnames(cross)==chr.dup)],
-                          method="hk", covar=trt, pheno.col=phe)
+                        chr = chrnames(cross)[-which(chrnames(cross) %in% chr)],
+                        method="hk", covar=trt, pheno.col=phe)
         mod3 <- addtoqtl(cross, best.mod, max(scan3)$chr, max(scan3)$pos)
+        print("new")
+        print(mod3)
       }
     }
     fit3 <- fitqtl(cross, qtl=mod3, 
@@ -64,10 +65,10 @@ eqtl.fit3<-function(cross, ct.obj, trt, pens=NULL, q3forms=NULL, refine.qtl=FALS
     cis.name<-cis.eqtl
     if(refine.qtl){
       best.mod<-refineqtl(cross, pheno.col=phe, qtl=best.mod, covar=trt, method="hk", model="normal",
-                      formula=best.form, keeplodprofile=F, verbose=F)
+                          formula=best.form, keeplodprofile=F, verbose=F)
       fitref <- fitqtl(cross, qtl=best.mod, 
-                     formula=best.form, pheno.col=phe, 
-                     covar=trt, method="hk", dropone=T, get.ests=T)
+                       formula=best.form, pheno.col=phe, 
+                       covar=trt, method="hk", dropone=T, get.ests=T)
       best.fit<-data.frame(fitref$result.drop)
       cis.name<-best.mod$name[1]
     }
