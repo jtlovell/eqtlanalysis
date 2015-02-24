@@ -122,8 +122,9 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
         diff.pos<-abs(diff(mod3$pos[mod3$chr==chr.dup]))
       }else{
         mod3a<-mod3
+        diff.pos<-NA
       }
-      if(diff.pos < 50){
+      if(diff.pos < 50 & !is.na(diff.pos)){
           scan3.2 <- addqtl(cross, qtl=best.mod, formula=form.in3,
                           chr = chrnames(cross)[-which(chrnames(cross)==chr.dup)],
                           method="hk", covar=trt, pheno.col=phe)
