@@ -233,6 +233,7 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
     }
     colnames(to.vc)[3:length(colnames(to.vc))]<-paste("Q",seq(from=1, to=length(colnames(to.vc))-2), sep="")
     snps<-as.data.frame(pull.geno(cross))
+    print(head(to.vc))
     to.vc$SNP<-snps
 
     v1<-varComp(as.formula(best.form) , to.vc,  random= ~ibs(SNP))
