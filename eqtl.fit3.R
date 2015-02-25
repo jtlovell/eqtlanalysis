@@ -22,12 +22,19 @@ eqtl.fit3<-function(cross, ct.obj, trt, pens=NULL, q3forms=NULL, refine.qtl=FALS
     scan3 <- addqtl(cross, qtl=best.mod, formula=form.in3, 
                     method="hk", covar=trt, pheno.col=phe)
     mod3 <- addtoqtl(cross, best.mod, max(scan3)$chr, max(scan3)$pos)
-    if(length(unique(mod3$chr))<3){
+    if(length(unique(mod3$chr))==2){
       chr.dup<-mod3$chr[(duplicated(mod3$chr))]
       diff.pos<-abs(diff(mod3$pos[mod3$chr==chr.dup]))
       if(diff.pos < 50 & !is.na(diff.pos)){
         scan3 <- addqtl(cross, qtl=best.mod, formula=form.in3,
                         chr = chrnames(cross)[-which(chrnames(cross) %in% chr)],
+                        method="hk", covar=trt, pheno.col=phe)
+        mod3 <- addtoqtl(cross, best.mod, max(scan3)$chr, max(scan3)$pos)
+      }
+    }else{
+      if(length(unique(mod3$chr))==1){
+        scan3 <- addqtl(cross, qtl=best.mod, formula=form.in3,
+                        chr = chrnames(cross)[-which(chrnames(cross) == unique(mod3$chr))],
                         method="hk", covar=trt, pheno.col=phe)
         mod3 <- addtoqtl(cross, best.mod, max(scan3)$chr, max(scan3)$pos)
       }
