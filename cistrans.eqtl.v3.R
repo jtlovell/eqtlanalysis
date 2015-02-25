@@ -164,9 +164,19 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   covar.ests_out<-data.frame(t(c(ests.all[rows.cov,],NA,NA,NA)))
   colnames(covar.ests_out)<-c("est.add","SE.add","t.add","est.dom","SE.dom","t.dom")
   rownames(covar.ests_out)<-"trt"
-  dom.ests_out<-data.frame(ests.all[rows.dom,1:3]); colnames(dom.ests_out)<-c("est.dom","SE.dom","t.dom")
-  add.ests_out<-data.frame(ests.all[rows.add,1:3]); colnames(add.ests_out)<-c("est.add","SE.add","t.add")
-  qtl.ests_out<-cbind(add.ests_out,dom.ests_out)
+  if(grepl("Q2", best.form)){
+    dom.ests_out<-data.frame(ests.all[rows.dom,1:3]);colnames(dom.ests_out)<-c("est.dom","SE.dom","t.dom")
+    add.ests_out<-data.frame(ests.all[rows.add,1:3]); colnames(add.ests_out)<-c("est.add","SE.add","t.add")
+    qtl.ests_out<-cbind(add.ests_out,dom.ests_out)
+  }else{
+    dom.ests_out<-data.frame(t(data.frame(ests.all[rows.dom,1:3])));colnames(dom.ests_out)<-c("est.dom","SE.dom","t.dom")
+    add.ests_out<-data.frame(t(data.frame(ests.all[rows.add,1:3]))); colnames(add.ests_out)<-c("est.add","SE.add","t.add")
+    qtl.ests_out<-cbind(add.ests_out,dom.ests_out)
+    row.names(qtl.ests_out)<-rownames(ests.all)[rows.add]
+    qtl.ests_out<-data.frame(qtl.ests_out)
+    rownames(covar.ests_out)<-"trt"
+  }
+  
   ests.out<-rbind(covar.ests_out,qtl.ests_out)
   ests.out$term.id<-gsub("a","",rownames(ests.out))
   
