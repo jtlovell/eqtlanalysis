@@ -141,14 +141,21 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
   all.out$pos<-pos.out
   
   #add category information
-  trans.name<-best.mod$name[!best.mod$name==cis.name]
-  category<-rownames(best.fit)
-  category[intersect(grep("trt", category), grep(paste(trans.name,collapse="|"), category))]<-"trans.trt.int"
-  category[intersect(grep("trt", category), grep(":", category))]<-"cis.trt.int"
-  category[grep(":", category)]<-"epi"
-  category[grep(paste(trans.name,collapse="|"), category)]<-"trans"
-  category[category==cis.name]<-"cis"
-  all.out$category<-category
+  if(grepl("Q2", best.form)){
+    trans.name<-best.mod$name[!best.mod$name==cis.name]
+    category<-rownames(best.fit)
+    category[intersect(grep("trt", category), grep(paste(trans.name,collapse="|"), category))]<-"trans.trt.int"
+    category[intersect(grep("trt", category), grep(":", category))]<-"cis.trt.int"
+    category[grep(":", category)]<-"epi"
+    category[grep(paste(trans.name,collapse="|"), category)]<-"trans"
+    category[category==cis.name]<-"cis"
+    all.out$category<-category
+    }else{
+      category<-rownames(best.fit)
+      category[intersect(grep("trt", category), grep(":", category))]<-"cis.trt.int"
+      category[grep("@", category)]<-"cis"
+  }
+
   #add phenotype name
   all.out$phenotype<-phe
   
