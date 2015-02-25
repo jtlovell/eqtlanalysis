@@ -11,7 +11,7 @@ pkg <- c("RCurl","e1071","qtl","snow","rlecuyer","plyr","ggplot2","reshape","res
 invisible(lapply(pkg, function(x) {cat(x,"..."); library(x, character.only=T, verbose=F, warn.conflicts=F,quietly=T)} ))
 sessionInfo()
 # import necessary functions from github
-function.names<-c("counts.summary.R","quantnorm.no0.R","cistrans.eqtl.simple.R")
+function.names<-c("counts.summary.R","quantnorm.no0.R","cistrans.eqtl.v3.R", "calc.polygenic.R")
 us<-paste("https://raw.githubusercontent.com/jtlovell/eqtlanalysis/master/",function.names, sep="")
 for(i in 1:length(function.names)){
   script <- getURL(us[i], ssl.verifypeer = FALSE)
@@ -134,13 +134,24 @@ pens.all<-c(0,  # plod = 0
         pens[4] + epi.pen + cis.trt.pen, #plod= lod(Q2) +lod(Q2*trt) - (pen4 + chi2.4 + chi2.2) 
         pens[4] + epi.pen + cis.trt.pen + cis.trt.pen) #plod= lod(Q2) +lod(Q2*trt) - (pen4 + chi2.4 + chi2.2 + chi2.2) 
 
-pen1<-c(0.000000,  1.301030,  3.967144,  5.268174,  6.144188,  6.922426,  8.223456,  9.576449, 10.877479)
+pens.all<-c(0.000000,  1.301030,  3.967144,  5.268174,  6.144188,  6.922426,  8.223456,  9.576449, 10.877479)
 cross.norm<-calc.genoprob(cross.norm, step=1,error.prob=0.001, map.function="kosambi")
-test<-cistrans.eqtl(cross=cross.norm, phe=as.character(genpos$gene[i]),
-              chromosome=genpos$lg[i],
-              position=genpos$pos[i], 
-              pens=pens.all, trt=trt, wiggle=3)
+which(genpos$gene == "Pahalv11b044716m.g")
+i=7369
 
+trt.num<-as.numeric(trt[,1])
+for(i in c(124,3215,6234,1437,3457,7235,9465)){
+  test<-cistrans.eqtl(cross=cross.norm, phe=i,
+                      chromosome=genpos$lg[i],
+                      position=genpos$pos[i], 
+                      pens=pens.all, trt=trt, wiggle=3)
+  test2<-calc.polygenic(cross=cross.norm, chrs=test$chr, poss=test$pos, best.form=test$formula, trt=trt.num)
+  
+  print(i)
+  test["formula"]; test["polygenic"]; test["stats"]
+}
+
+i=3457
 
 pens.all3<-c(pens.all, pens3)
 
