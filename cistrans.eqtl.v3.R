@@ -149,12 +149,13 @@ cistrans.eqtl<-function(cross, chromosome, position, phe, pens=NULL, forms.in=NU
     category[grep(":", category)]<-"epi"
     category[grep(paste(trans.name,collapse="|"), category)]<-"trans"
     category[category==cis.name]<-"cis"
-    all.out$category<-category
+    
     }else{
       category<-rownames(best.fit)
       category[intersect(grep("trt", category), grep(":", category))]<-"cis.trt.int"
       category[grep("@", category)]<-"cis"
-  }
+    }
+  all.out$category<-category
 
   #add phenotype name
   all.out$phenotype<-phe
