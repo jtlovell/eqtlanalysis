@@ -49,6 +49,9 @@ fourperms<-function(cross, phename, alpha=0.05, np=100, nc=1, fit3=F, covar){
     pens.8<-summary(s1perm.8, alpha=alpha)[1]
     return(c(pens.1,pens.2,pens.3,pens.4,pens.5,pens.6,pens.7,pens.8))
   }else{
-    return(c(pens.1,pens.2,pens.3,pens.4))
+    return(list(
+      penalties = c(pens.1,pens.2,pens.3,pens.4),
+      permutations= list(s1perm.1,s1perm.2,s1perm.3,s1perm.4))
+    )
   }  
 }

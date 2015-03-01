@@ -1,4 +1,3 @@
-#combine 20 scanones
 combine.s1<-function(s1s,n=100){
   sets<-split(1:length(s1s), ceiling(seq_along(1:length(s1s))/n))
   cat("combining scanones by sets of", n, "\n")

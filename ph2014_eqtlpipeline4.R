@@ -64,7 +64,13 @@ rownames(ge.qn)<-ge.qn$id
 genes.tobinary<-rownames(sums)[sums$n.na>=54 & sums$n.na<=306 &  sums$mean>=5]
 ge.binary<-eqtl.phes[,genes.tobinary]
 set.seed(42)
-ge.binary<-data.frame(apply(ge.binary, 2,function(x) ifelse(x==0,rnorm(1, mean=0, sd=0.0001),rnorm(1, mean=1, sd=0.0001))))
+prop.0<-apply(ge.binary,2,function(x) length(x[x==0])/length(x))
+prop.0<-data.frame(colnames(ge.binary),prop.0)
+colnames(prop.0)[1]<-"gene"
+ge.binary<-data.frame(apply(ge.binary, 2,function(x) {
+  x[x!=0]<-rnorm(length(x[x!=0]), mean=1, sd=0.0001)
+  x[x==0]<-rnorm(length(x[x==0]), mean=0, sd=0.0001)
+  x}))
 ge.binary<-cbind(eqtl.phes[,1:4], ge.binary)
 rownames(ge.binary)<-ge.binary$id
 
@@ -75,7 +81,7 @@ rownames(ge.binary)<-ge.binary$id
 cross.norm<-add.phenos(cross, newdata = ge.qn)
 #binary-ized counts
 cross.bin<-add.phenos(cross, newdata = ge.binary)
-
+save(cross.bin, prop.0, file="ph2015_binary.eqtl_input.RData")
 #make a cross object with a random phenotype to run permutations
 
 #make covariates (for treatment and cis-eqtl)
