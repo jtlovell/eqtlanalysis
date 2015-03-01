@@ -36,7 +36,7 @@ scatterhist <- function(x, y, xlab = "", ylab = "", plottitle="",
   par(mar = c(2,2,.5,.5), xaxt="s", yaxt="s", bty="n")
   # this color allows traparency & overplotting-- useful if a lot of points
   plot(x, y , pch=19, col="#00000022", cex=xsize, type="n", ylab=ylab, xlab=xlab)
-  cols<-c(rainbow(8),"grey","black")
+  cols<-c("red","orange","yellow","greenyellow","darkturquoise","forestgreen","blue","purple", "grey","black")
   count<-0
   if(i=="7"){
     legend("top",paste("chr_",1:10,sep=""), col=cols, pch=20,cex=1.5)
