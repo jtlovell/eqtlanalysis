@@ -3,12 +3,12 @@ fill.gapinmap<-function(cross, chr, pos.low, pos.high, genos, genepos){
   if(length(gp.chr[,1])<1){
     return(cross)
   }else{
-    wind<-seq(from=min(gp.chr$pos), to=max(gp.chr$pos), by=3)
+    wind<-seq(from=min(gp.chr$pos), to=max(gp.chr$pos), by=.2)
     if(length(wind)==1){
       wind<-c(min(gp.chr$pos),max(gp.chr$pos))
     }
     for(i in 1:(length(wind)-1)){
-      gp<-gp.chr[with(gp.chr, pos>wind[i]+1 & pos <wind[i+1]-1),]
+      gp<-gp.chr[with(gp.chr, pos>wind[i] & pos <wind[i+1]),]
       if(length(gp[,1])<1){
         next()
       }else{
